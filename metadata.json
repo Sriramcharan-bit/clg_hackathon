@@ -1,0 +1,5 @@
+{
+  "name": "Smart Public Transport Tracker",
+  "description": "A modern real-time bus tracking application for smart public transport.",
+  "requestFramePermissions": ["geolocation"]
+}
