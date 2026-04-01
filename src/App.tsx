@@ -107,7 +107,7 @@ export default function App() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Enter Bus ID (e.g. B-102)"
+                  placeholder="Enter Bus ID (e.g. HYD-01)"
                   value={busId}
                   onChange={(e) => setBusId(e.target.value)}
                   className="w-full pl-12 pr-32 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-lg shadow-sm"
@@ -120,7 +120,7 @@ export default function App() {
                 </button>
               </form>
               <p className="mt-4 text-sm text-slate-500">
-                Popular routes: <span className="text-blue-600 cursor-pointer hover:underline">Route 42</span>, <span className="text-blue-600 cursor-pointer hover:underline">Express 10</span>
+                Popular routes: <span className="text-blue-600 cursor-pointer hover:underline">HYD-01</span>, <span className="text-blue-600 cursor-pointer hover:underline">HYD-02</span>
               </p>
             </div>
           </motion.div>

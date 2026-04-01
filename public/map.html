@@ -1,99 +1,268 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bus Tracking - SmartTrack</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Bus Tracking - SmartTrack</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-      body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        #map { height: calc(100vh - 64px); width: 100%; }
+        .custom-info-window { padding: 8px; }
+        .bus-label { 
+            background: #2563eb; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-size: 10px; 
+            font-weight: bold;
+            white-space: nowrap;
+        }
     </style>
-  </head>
-  <body class="bg-slate-50 min-h-screen flex flex-col">
-    <nav class="bg-white border-b border-slate-200 px-6 py-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <a href="/" class="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <span class="bg-blue-600 text-white p-1.5 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3"/><path d="M22 22h-4"/><path d="M3 18h3"/><path d="M2 22h4"/><path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
-          </span>
-          SmartTrack
-        </a>
-        <div id="bus-display" class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-          Tracking: Loading...
+</head>
+<body class="bg-slate-50 overflow-hidden">
+    <!-- Navbar -->
+    <nav class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-10 relative">
+        <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 rounded-lg text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3"/><path d="M22 22h-4"/><path d="M3 18h3"/><path d="M2 22h4"/><path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+                </div>
+                <span class="text-xl font-bold text-slate-900">SmartTrack</span>
+            </a>
+            <div class="h-6 w-px bg-slate-200 mx-2"></div>
+            <div id="status-indicator" class="flex items-center gap-2 text-sm font-medium text-slate-500">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                Live System Active
+            </div>
         </div>
-      </div>
+        <div class="flex items-center gap-4">
+            <div id="active-bus-pill" class="hidden bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+                Tracking: <span id="active-bus-id"></span>
+            </div>
+            <a href="/" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">New Search</a>
+        </div>
     </nav>
 
-    <main class="flex-grow flex flex-col items-center justify-center p-6">
-      <div class="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-        <div class="p-8 border-b border-slate-100 flex justify-between items-center">
-          <div>
-            <h1 class="text-2xl font-bold text-slate-900">Live Map View</h1>
-            <p class="text-slate-500">Real-time location data for <span id="bus-id-label" class="font-semibold text-blue-600">...</span></p>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="location.reload()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-            </button>
-          </div>
-        </div>
-        
-        <div class="aspect-video bg-slate-100 relative overflow-hidden flex items-center justify-center">
-          <!-- Mock Map -->
-          <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#cbd5e1 2px, transparent 2px); background-size: 40px 40px;"></div>
-          
-          <div id="bus-marker" class="relative z-10 transition-all duration-1000 ease-in-out">
-            <div class="bg-blue-600 text-white p-3 rounded-full shadow-lg shadow-blue-500/50 animate-bounce">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3"/><path d="M22 22h-4"/><path d="M3 18h3"/><path d="M2 22h4"/><path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
-            </div>
-            <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap bg-slate-900 text-white text-[10px] px-2 py-1 rounded font-bold uppercase tracking-tighter">
-              Live Location
-            </div>
-          </div>
+    <!-- Map Container -->
+    <div id="map"></div>
 
-          <div class="absolute bottom-6 right-6 bg-white/90 backdrop-blur p-4 rounded-2xl shadow-lg border border-white/20 text-xs space-y-2">
-            <div class="flex justify-between gap-8">
-              <span class="text-slate-500">Speed</span>
-              <span class="font-bold text-slate-900">42 km/h</span>
-            </div>
-            <div class="flex justify-between gap-8">
-              <span class="text-slate-500">Next Stop</span>
-              <span class="font-bold text-slate-900">Central Station</span>
-            </div>
-            <div class="flex justify-between gap-8">
-              <span class="text-slate-500">ETA</span>
-              <span class="font-bold text-blue-600">4 mins</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <a href="/" class="mt-8 text-blue-600 font-semibold flex items-center gap-2 hover:underline">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-        Back to Search
-      </a>
-    </main>
+    <!-- Loading Overlay -->
+    <div id="loading" class="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-slate-600 font-medium tracking-wide">Initializing Satellite Data...</p>
+        <button onclick="hideLoading()" class="mt-4 text-xs text-blue-600 hover:underline">Taking too long? Click to skip</button>
+    </div>
 
     <script>
-      const urlParams = new URLSearchParams(window.location.search);
-      const busId = urlParams.get('busId') || 'Unknown';
-      document.getElementById('bus-id-label').textContent = busId;
-      document.getElementById('bus-display').textContent = `Tracking: ${busId}`;
+        // Hyderabad Mock Data: Real routes for Hyderabad
+        const BUS_DATA = [
+            {
+                id: 'HYD-01',
+                name: 'Mehdipatnam - Aziznagar Road',
+                status: 'On Time',
+                color: '#2563eb',
+                route: [
+                    { lat: 17.395754216164814, lng: 78.43136776689823 },
+                    { lat: 17.39593597168745, lng: 78.42794166076042 },
+                    { lat: 17.393569663239912, lng: 78.42678446223955 },
+                    { lat: 17.392149863476195, lng: 78.42298223852814 },
+                    { lat: 17.384419649226825, lng: 78.4224862963049 },
+                    { lat: 17.383315306246136, lng: 78.42232098223049 },
+                    { lat: 17.38126436588872, lng: 78.42165972593286 },
+                    { lat: 17.3763492343413, lng: 78.42014608177304 },
+                    { lat: 17.37560942491655, lng: 78.41971004053221 },
+                    { lat: 17.375262638219713, lng: 78.41937089734492 },
+                    { lat: 17.374545943631702, lng: 78.41840191680978 },
+                    { lat: 17.37391682513474, lng: 78.41710042072121 },
+                    { lat: 17.37342410157164, lng: 78.41616397978673 },
+                    { lat: 17.373088268475477, lng: 78.41470839377767 },
+                    { lat: 17.373024048163202, lng: 78.41265604815284 },
+                    { lat: 17.37300599914507, lng: 78.41182690218187 },
+                    { lat: 17.373186489239615, lng: 78.40962368291841 },
+                    { lat: 17.373202861972306, lng: 78.40609341673814 },
+                    { lat: 17.373024692442186, lng: 78.40569204177497 },
+                    { lat: 17.372588176360797, lng: 78.40537467552502 },
+                    { lat: 17.371634964158268, lng: 78.40490796045155 },
+                    { lat: 17.370859918804083, lng: 78.40454392269426 },
+                    { lat: 17.3689980148168, lng: 78.40378784419177 },
+                    { lat: 17.368668393477336, lng: 78.40345180924865 },
+                    { lat: 17.36855258043379, lng: 78.4030971057871 },
+                    { lat: 17.368427858614314, lng: 78.40252771339748 },
+                    { lat: 17.368285319288084, lng: 78.40202366111815 },
+                    { lat: 17.368222839162655, lng: 78.40090200508497 },
+                    { lat: 17.368099963133297, lng: 78.40052649586151 },
+                    { lat: 17.367946367980668, lng: 78.40029046149246 },
+                    { lat: 17.367700615468618, lng: 78.39987203692918 },
+                    { lat: 17.366236333238895, lng: 78.39824125392315 },
+                    { lat: 17.365773893932797, lng: 78.39754957717697 },
+                    { lat: 17.364785366413415, lng: 78.39560084457584 },
+                    { lat: 17.364787253321204, lng: 78.39552201845444 },
+                    { lat: 17.364228480135022, lng: 78.39507935733765 },
+                    { lat: 17.36394227857488, lng: 78.39489372525642 }
+                ]
+            }
+        ];
 
-      // Simple mock movement
-      const marker = document.getElementById('bus-marker');
-      let x = 0;
-      let y = 0;
-      
-      function moveBus() {
-        x = (Math.random() - 0.5) * 100;
-        y = (Math.random() - 0.5) * 100;
-        marker.style.transform = `translate(${x}px, ${y}px)`;
-      }
+        let map;
+        const markers = {};
+        const polylines = {};
+        const infoWindows = {};
 
-      setInterval(moveBus, 3000);
-      moveBus();
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.opacity = '0';
+                setTimeout(() => loading.style.display = 'none', 500);
+            }
+        }
+
+        // Safety timeout: Hide loading after 6 seconds if API fails
+        setTimeout(hideLoading, 6000);
+
+        function initMap() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetBusId = urlParams.get('busId');
+            
+            hideLoading();
+
+            // Default center (Hyderabad)
+            const defaultCenter = { lat: 17.3850, lng: 78.4867 };
+            
+            try {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 12,
+                    center: defaultCenter,
+                    styles: [
+                        { "featureType": "administrative", "elementType": "labels.text.fill", "stylers": [{ "color": "#444444" }] },
+                        { "featureType": "landscape", "elementType": "all", "stylers": [{ "color": "#f2f2f2" }] },
+                        { "featureType": "poi", "elementType": "all", "stylers": [{ "visibility": "off" }] },
+                        { "featureType": "road", "elementType": "all", "stylers": [{ "saturation": -100 }, { "lightness": 45 }] },
+                        { "featureType": "road.highway", "elementType": "all", "stylers": [{ "visibility": "simplified" }] },
+                        { "featureType": "road.arterial", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+                        { "featureType": "transit", "elementType": "all", "stylers": [{ "visibility": "off" }] },
+                        { "featureType": "water", "elementType": "all", "stylers": [{ "color": "#cad2d3" }, { "visibility": "on" }] }
+                    ],
+                    disableDefaultUI: false,
+                    zoomControl: true,
+                    mapTypeControl: false,
+                    streetViewControl: false
+                });
+
+                const filteredBuses = targetBusId 
+                    ? BUS_DATA.filter(b => b.id.toLowerCase().includes(targetBusId.toLowerCase()))
+                    : BUS_DATA;
+
+                if (targetBusId && filteredBuses.length > 0) {
+                    document.getElementById('active-bus-pill').classList.remove('hidden');
+                    document.getElementById('active-bus-id').textContent = filteredBuses[0].id;
+                    map.setCenter(filteredBuses[0].route[0]);
+                    map.setZoom(14);
+                } else if (targetBusId && filteredBuses.length === 0) {
+                    console.warn("No bus found with ID: " + targetBusId);
+                    BUS_DATA.forEach(bus => createBusOnMap(bus));
+                    return;
+                }
+
+                filteredBuses.forEach(bus => {
+                    createBusOnMap(bus);
+                });
+            } catch (e) {
+                console.error("Map initialization failed:", e);
+                document.getElementById('status-indicator').innerHTML = '<span class="text-red-500">Map Error</span>';
+            }
+        }
+
+        function createBusOnMap(bus) {
+            // Draw Route Polyline
+            const polyline = new google.maps.Polyline({
+                path: bus.route,
+                geodesic: true,
+                strokeColor: bus.color,
+                strokeOpacity: 0.4,
+                strokeWeight: 4,
+                map: map
+            });
+            polylines[bus.id] = polyline;
+
+            // Create Marker
+            const marker = new google.maps.Marker({
+                position: bus.route[0],
+                map: map,
+                title: bus.name,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: bus.color,
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: '#ffffff',
+                }
+            });
+            markers[bus.id] = marker;
+
+            // Info Window
+            const infoContent = `
+                <div class="custom-info-window">
+                    <h3 class="font-bold text-slate-900">${bus.name}</h3>
+                    <p class="text-xs text-slate-500 mb-2">ID: ${bus.id}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold uppercase">${bus.status}</span>
+                    </div>
+                </div>
+            `;
+            const infoWindow = new google.maps.InfoWindow({
+                content: infoContent
+            });
+            infoWindows[bus.id] = infoWindow;
+
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+
+            // Start Animation
+            animateBus(bus.id, bus.route);
+        }
+
+        function animateBus(busId, route) {
+            const marker = markers[busId];
+            let currentStep = 0;
+            let progress = 0;
+            const speed = 0.001; // Slower speed factor (was 0.005)
+
+            function step() {
+                if (currentStep >= route.length - 1) return; // Stop at destination
+
+                const start = route[currentStep];
+                const end = route[currentStep + 1];
+
+                progress += speed;
+
+                if (progress >= 1) {
+                    progress = 0;
+                    currentStep++;
+                    if (currentStep >= route.length - 1) {
+                        marker.setPosition(route[route.length - 1]);
+                        return; // Finished
+                    }
+                }
+
+                // Interpolate position
+                const lat = start.lat + (end.lat - start.lat) * progress;
+                const lng = start.lng + (end.lng - start.lng) * progress;
+                
+                const newPos = new google.maps.LatLng(lat, lng);
+                marker.setPosition(newPos);
+
+                requestAnimationFrame(step);
+            }
+
+            requestAnimationFrame(step);
+        }
     </script>
-  </body>
+
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBcDCa0KVpNIx6oUrM9Vy7KfUOhkHkJHGI&callback=initMap" async defer></script>
+</body>
 </html>
